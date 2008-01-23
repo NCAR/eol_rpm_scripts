@@ -37,25 +37,25 @@ get_rpm_topdir()
 get_eol_repo_root()
 {
     # Return path of top of EOL repository, above the
-    # fedora or centos directories
-    return /net/www/docs/software/rpms
+    # fedora or epel directories
+    echo /net/www/docs/software/rpms
 }
 
-get_repo_path()
+get_host_repo_path()
 {
     # return a repository directory path matching my distribution,
     # looking like the following:
     #   fedora/8
-    #   centos/5
+    #   epel/5
     # Note it doesn't have an architecture directory, like i386.
     local rrel=/etc/redhat-release
     local dist="unknown"
     if [ -f $rrel ]; then
-        n=`sed 's/^.*release *\([0-9]*\).*/\1/' $rrel`
+        local n=`sed 's/^.*release *\([0-9]*\).*/\1/' $rrel`
         if fgrep -q Enterprise $rrel; then
-            dist=centos/$n
+            dist=epel/$n
         elif fgrep -q CentOS $rrel; then
-            dist=centos/$n
+            dist=epel/$n
         elif fgrep -q Fedora $rrel; then
             dist=fedora/$n
         fi
@@ -63,60 +63,122 @@ get_repo_path()
     echo $dist
 }
 
-get_repo_paths_from_rpm()
+copy_rpms_to_eol_repo()
 {
-    # SPEC files of rpms often specify "Release: N%{dist}".
-    # %{dist} on Fedora expands to ".fc8". on centos or EL it is null.
-    # Parse the release field to try to figure out whether it is
-    # a fedora or centos package.
-    #
-    # This will return one or more strings looking like the following:
-    #   fedora/8/`uname -i`
-    #   centos/5/`uname -i`
-    #   fedora/8/SRPMS
-    #   centos/5/SRPMS
-    #
-    # It can return more than one path if the rpm is for "noarch".
-    # In this case it returns paths to all the architectures found
-    # on the repo, like: fedora/8/i386 fedora/8/x86_64
+    # copy of list of rpms to the correct eol repository
+    local -a allrepos
+    local rroot=`get_eol_repo_root`
+    while [ $# -gt 0 ]; do
+        local rpmfile=$1
+        shift
+        local rpm=${rpmfile%.*}           # lop off .rpm
+        local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
+        rpm=${rpm%.*}               # lop off arch
+        local rel=${rpm##*-}         # get release
+        local dist=`echo "$rel" | sed 's/^[0-9.]*//'`
 
-    #
-    local rpm=$1
-    rpm=${rpm%.*}               # lop off .rpm
-    local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
-    rpm=${rpm%.*}               # lop off arch
-    local rel=${rpm##*-}         # get release
-    local dist = `echo "$rel" | sed 's/^[0-9.]*//'`
-    local -a rpaths
-
-    case $dist in
-    fc*)
-        dist="fedora/`echo $dist | cut -c3-`"
-        ;;
-    *)
-        # get repo path matching for machine
-        dist=`get_repo_path`
-        ;;
-    esac
-
-    case $arch in
-    src)
-        rpaths=("$dist/SRPMS")
-        ;;
-    noarch)
-        local -a apaths=(`get_eol_repo_root`/$dist/*)
-        for a in ${apaths[*]}; do
-            arch=${a##*/}
-            if [ "$arch" != SRPMS ]; then
-                rpaths=(${rpaths[*]} $dist/$arch} 
-            fi
+        local -a repos=()
+        case $arch in
+        src)
+            # find all SRPMS directories in eol repository
+            # repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -name ael -prune \) -o -type d -name SRPMS -print`)
+            case $dist in
+            fc*)
+                # if fc* in the rpm name, then copy to specific repository
+                repos=($rroot/fedora/`echo $dist | cut -c3-`/SRPMS)
+                ;;
+            *)
+                # get repo path for this machine
+                repos=($rroot/`get_host_repo_path`/SRPMS)
+                ;;
+            esac
+            ;;
+        noarch)
+            # find all non-source repositories, include the path for this machine
+            repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -name ael -o -name repodata -o -name SRPMS -prune \) -o -type d -print` $rroot/`get_host_repo_path`/`uname -i`)
+            repos=(`unique_strings ${repos[*]}`)
+            ;;
+        *)
+            case $dist in
+            fc*)
+                # if fc* in the rpm name, then copy to specific repository
+                repos=($rroot/fedora/`echo $dist | cut -c3-`/$arch)
+                ;;
+            *)
+                # get repo path for this machine
+                repos=($rroot/`get_host_repo_path`/$arch)
+                ;;
+            esac
+            ;;
+        esac
+        for d in ${repos[*]}; do
+            [ -d $d ] || mkdir -p $d
+            echo rsync $rpmfile $d
+            rsync $rpmfile $d
         done
-        ;;
-    *)
-        rpaths=($dist/"$arch")
-        ;;
-    esac
+        rm -f $rpmfile
+        allrepos=(`unique_strings ${allrepos[*]} ${repos[*]}`)
+    done
 
-    echo "${rpaths[*]}"
+    if ! which createrepo; then
+        echo "createrepo command not found. Run createrepo on a system with the createrepo package"
+    fi
+    for r in ${allrepos[*]}; do
+        echo createrepo $r
+        # --update is not supported on all versions of createrepo
+        createrepo $r
+    done
+}
+copy_ael_rpms_to_eol_repo()
+{
+    # copy of list of rpms to the correct eol repository
+    local -a allrepos
+    local rroot=`get_eol_repo_root`
+    while [ $# -gt 0 ]; do
+        local rpmfile=$1
+        shift
+        local rpm=${rpmfile%.*}           # lop off .rpm
+        local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
+
+        local -a repos
+        case $arch in
+        src)
+            repos=($rroot/ael/SRPMS)
+            ;;
+        noarch)
+            repos=($rroot/ael/i386)
+            ;;
+        i386)
+            repos=($rroot/ael/i386)
+            ;;
+        *)
+            echo "only i386 rpms allowed in ael repository, skipping $rpmfile"
+            ;;
+        esac
+        for d in ${repos[*]}; do
+            [ -d $d ] || mkdir -p $d
+            echo rsync $rpmfile $d
+            rsync $rpmfile $d
+        done
+        rm -f $rpmfile
+        allrepos=(`unique_strings ${allrepos[*]} ${repos[*]}`)
+    done
+    if ! which createrepo; then
+        echo "createrepo command not found. Run createrepo on a system with the createrepo package"
+    fi
+    for r in ${allrepos[*]}; do
+        echo createrepo $r
+        # --update is not supported on all versions of createrepo
+        createrepo $r
+    done
 }
 
+unique_strings()
+{
+    # remove duplicate strings from a list by piping to sort -u,
+    local OLDIFS=$IFS
+    IFS=$'\n'
+    res=(`echo "$*" | sort -u`)
+    IFS=$OLDIFS
+    echo ${res[*]}
+}
