@@ -32,6 +32,7 @@ get_rpm_topdir()
         echo "%_topdir not defined in $rmacs or /usr/lib/rpm"
         topdir="unknown_topdir"
     fi
+    mkdir -p $topdir/{BUILD,RPMS,S{OURCE,PEC,RPM}S} || exit 1
     echo "$topdir"
 }
 get_eol_repo_root()
