@@ -96,7 +96,8 @@ copy_rpms_to_eol_repo()
             ;;
         noarch)
             # find all non-source repositories, include the path for this machine
-            repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -name ael -o -name repodata -o -name SRPMS -prune \) -o -type d -print` $rroot/`get_host_repo_path`/`uname -i`)
+            # Exclude ael, old, repodata and any SRPMS directories
+            repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -name ael -o -name repodata -o -name SRPMS -o -name old -prune \) -o -type d -print` $rroot/`get_host_repo_path`/`uname -i`)
             repos=(`unique_strings ${repos[*]}`)
             ;;
         *)
