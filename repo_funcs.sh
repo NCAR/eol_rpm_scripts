@@ -128,7 +128,7 @@ copy_rpms_to_eol_repo()
     for r in ${allrepos[*]}; do
         echo createrepo $r
         # --update is not supported on all versions of createrepo
-        createrepo $r
+        createrepo $r > /dev/null
     done
 }
 copy_ael_rpms_to_eol_repo()
@@ -171,7 +171,7 @@ copy_ael_rpms_to_eol_repo()
     for r in ${allrepos[*]}; do
         echo createrepo $r
         # --update is not supported on all versions of createrepo
-        createrepo $r
+        createrepo $r > /dev/null
     done
 }
 
