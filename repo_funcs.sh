@@ -39,7 +39,18 @@ get_eol_repo_root()
 {
     # Return path of top of EOL repository, above the
     # fedora or epel directories
-    echo /net/www/docs/software/rpms
+    # If /net/www/docs/software/rpms does not exist,
+    # try a local apache directory, which may not exist.
+    # The calling script should check that the returned path exists.
+
+    local d=/net/www/docs/software/rpms 
+    if [ -d $d ]; then
+        echo $d
+    else
+        d=/var/www/html/software/rpms
+        [ ! -d $d ] || mkdir -p $d
+        echo $d
+    fi
 }
 
 get_host_repo_path()
