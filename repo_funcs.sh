@@ -195,3 +195,12 @@ unique_strings()
     IFS=$OLDIFS
     echo ${res[*]}
 }
+
+get_version_from_spec () {
+    if [ $# -eq 1 ]; then
+        awk '/^Version:/{print $2}' $1
+    else
+        echo "get_version_from_spec:no_spec_file_arg"
+    fi
+}
+
