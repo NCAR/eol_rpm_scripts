@@ -77,6 +77,10 @@ get_host_repo_path()
 
 copy_rpms_to_eol_repo()
 {
+    if [ $((`umask`)) -ne  $((0002)) ]; then
+        echo "setting umask to 0002 to allow group write permission"
+        umask 0002
+    fi
     # copy of list of rpms to the correct eol repository
     local -a allrepos
     local rroot=`get_eol_repo_root`
@@ -144,6 +148,10 @@ copy_rpms_to_eol_repo()
 }
 copy_ael_rpms_to_eol_repo()
 {
+    if [ $((`umask`)) -ne  $((0002)) ]; then
+        echo "setting umask to 0002 to allow group write permission"
+        umask 0002
+    fi
     # copy of list of rpms to the correct eol repository
     local -a allrepos
     local rroot=`get_eol_repo_root`
