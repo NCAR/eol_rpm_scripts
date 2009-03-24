@@ -144,6 +144,9 @@ copy_rpms_to_eol_repo()
         echo createrepo $r
         # --update is not supported on all versions of createrepo
         createrepo $r > /dev/null || { echo "createrepo error"; exit 1; }
+        # For some reason createrepo is creating files without group write permission
+        # even if umask is 0002.
+        find $r -user $USER \! -perm -020 -exec chmod g+w {} \;
     done
 }
 copy_ael_rpms_to_eol_repo()
@@ -191,6 +194,9 @@ copy_ael_rpms_to_eol_repo()
         echo createrepo $r
         # --update is not supported on all versions of createrepo
         createrepo $r > /dev/null || { echo "createrepo error"; exit 1; }
+        # For some reason createrepo is creating files without group write permission
+        # even if umask is 0002.
+        find $r -user $USER \! -perm -020 -exec chmod g+w {} \;
     done
 }
 
