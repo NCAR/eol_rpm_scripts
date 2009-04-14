@@ -132,6 +132,7 @@ copy_rpms_to_eol_repo()
             [ -d $d ] || mkdir -p $d
             echo rsync $rpmfile $d
             rsync $rpmfile $d
+            chmod g+w $d/$rpmfile
         done
         rm -f $rpmfile
         allrepos=(`unique_strings ${allrepos[*]} ${repos[*]}`)
@@ -183,6 +184,7 @@ copy_ael_rpms_to_eol_repo()
             [ -d $d ] || mkdir -p $d
             echo rsync $rpmfile $d
             rsync $rpmfile $d
+            chmod g+w $d/$rpmfile
         done
         rm -f $rpmfile
         allrepos=(`unique_strings ${allrepos[*]} ${repos[*]}`)
