@@ -237,3 +237,16 @@ get_version_from_spec () {
     fi
 }
 
+foldertab()
+{
+    fill="________________________________________________________________________________"
+    maxlen=${#fill}
+    cmd_args=$@
+    len=${#cmd_args}
+
+    echo ${fill:0:${len}+1}
+    echo -n $cmd_args
+    echo -n " \\"
+    echo ${fill:0:${maxlen}-${len}-2}
+    echo
+}
