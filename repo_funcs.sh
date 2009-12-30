@@ -94,6 +94,7 @@ copy_rpms_to_eol_repo()
         local dist=`echo "$rel" | sed 's/^[0-9.]*//'`
 
         local -a repos=()
+        local basearch=$arch
         case $arch in
         src)
             # find all SRPMS directories in eol repository
@@ -115,15 +116,18 @@ copy_rpms_to_eol_repo()
             repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -wholename "*/ael/*" -o -name repodata -o -name SRPMS -o -wholename "*/old/*" -prune \) -o -type d -print` $rroot/`get_host_repo_path`/`uname -i`)
             repos=(`unique_strings ${repos[*]}`)
             ;;
+        i586)
+            basearch=i386
+            ;&  # fall-through
         *)
             case $dist in
             fc*)
                 # if fc* in the rpm name, then copy to specific repository
-                repos=($rroot/fedora/`echo $dist | cut -c3-`/$arch)
+                repos=($rroot/fedora/`echo $dist | cut -c3-`/$basearch)
                 ;;
             *)
                 # get repo path for this machine
-                repos=($rroot/`get_host_repo_path`/$arch)
+                repos=($rroot/`get_host_repo_path`/$basearch)
                 ;;
             esac
             ;;
@@ -184,7 +188,7 @@ copy_ael_rpms_to_eol_repo()
         noarch)
             repos=($rroot/ael/i386)
             ;;
-        i386)
+        i[35]86)
             repos=($rroot/ael/i386)
             ;;
         *)
