@@ -118,7 +118,7 @@ copy_rpms_to_eol_repo()
             ;;
         i586)
             basearch=i386
-            ;&  # fall-through
+            ;;  # fall-through
         *)
             case $dist in
             fc*)
@@ -165,6 +165,7 @@ copy_rpms_to_eol_repo()
         find $r -user $USER \! -perm -020 -exec chmod g+w {} \;
     done
 }
+
 copy_ael_rpms_to_eol_repo()
 {
     if [ $((`umask`)) -ne  $((0002)) ]; then
