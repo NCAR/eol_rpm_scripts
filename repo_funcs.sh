@@ -144,6 +144,10 @@ copy_rpms_to_eol_repo()
                 ;;
             esac
             ;;
+        *)
+            echo "rpm architecture $arch not supported in $0"
+            exit 1
+            ;;
         esac
         for d in ${repos[*]}; do
             [ -d $d ] || mkdir -p $d
