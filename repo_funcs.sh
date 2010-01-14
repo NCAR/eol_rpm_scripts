@@ -130,7 +130,7 @@ copy_rpms_to_eol_repo()
             esac
             # note: newer bash versions (4.0, Fedora 11) support use of ";&"
             # in place of ";;" to do a fallthru, but it isn't supported on
-            # EL4 bash (3.2.25)
+            # RHEL5 bash (3.2.25)
             ;;
         x86_64)
             case $dist in
@@ -165,7 +165,7 @@ copy_rpms_to_eol_repo()
     for r in ${allrepos[*]}; do
         echo createrepo --checksum sha --update --checkts $r
         # --update is not supported on all versions of createrepo, but
-        # seems to be valid on 0.4.9, which is in EL4.
+        # seems to be valid on 0.4.9, which is in RHEL5.
 
         # Create sha1 checksums, which are compatible with rhel5 and fedora yum.
         # rhel5 systems have version 0.4.9 of createrepo which apparently can only
@@ -229,7 +229,7 @@ copy_ael_rpms_to_eol_repo()
     for r in ${allrepos[*]}; do
         echo createrepo --checksum sha --update --checkts $r
         # --update is not supported on all versions of createrepo, but
-        # seems to be valid on 0.4.9, which is in EL4.
+        # seems to be valid on 0.4.9, which is in RHEL5.
 
         # Create sha1 checksums, which are compatible with rhel5 and fedora yum.
         # rhel5 systems have version 0.4.9 of createrepo which apparently can only
