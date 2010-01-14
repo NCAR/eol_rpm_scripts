@@ -116,10 +116,23 @@ copy_rpms_to_eol_repo()
             repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -wholename "*/ael/*" -o -name repodata -o -name SRPMS -o -wholename "*/old/*" -prune \) -o -type d -print` $rroot/`get_host_repo_path`/`uname -i`)
             repos=(`unique_strings ${repos[*]}`)
             ;;
-        i586)
+        i?86)
             basearch=i386
-            ;;  # fall-through
-        *)
+            case $dist in
+            fc*)
+                # if fc* in the rpm name, then copy to specific repository
+                repos=($rroot/fedora/`echo $dist | cut -c3-`/$basearch)
+                ;;
+            *)
+                # get repo path for this machine
+                repos=($rroot/`get_host_repo_path`/$basearch)
+                ;;
+            esac
+            # note: newer bash versions (4.0, Fedora 11) support use of ";&"
+            # in place of ";;" to do a fallthru, but it isn't supported on
+            # EL4 bash (3.2.25)
+            ;;
+        x86_64)
             case $dist in
             fc*)
                 # if fc* in the rpm name, then copy to specific repository
@@ -146,19 +159,19 @@ copy_rpms_to_eol_repo()
         echo "createrepo command not found. Run createrepo on a system with the createrepo package"
     fi
     for r in ${allrepos[*]}; do
-        echo createrepo --checksum sha1 $r
+        echo createrepo --checksum sha $r
         # --update is not supported on all versions of createrepo
 
         # Create sha1 checksums, which are compatible with rhel5 and fedora yum.
         # rhel5 systems have version 0.4.9 of createrepo which apparently can only
-        # create sha1 checksums. When passed "--checksum sha1" the old createrepo reports
+        # create sha1 checksums. When passed "--checksum sha" the old createrepo reports
         # "This option is deprecated" (sic), but seems to succeed.
         # Fedora systems (10,11,??) have 0.9.7 of createrepo.
 
         # If yum on an rhel5 system cannot find createrepo package:
         # sudo rpm -ihv http://mirror.centos.org/centos/5.4/os/x86_64/CentOS/createrepo-0.4.11-3.el5.noarch.rpm
 
-        createrepo --checksum sha1 $r > /dev/null || { echo "createrepo error"; exit 1; }
+        createrepo --checksum sha $r > /dev/null || { echo "createrepo error"; exit 1; }
 
         # For some reason createrepo is creating files without group write permission
         # even if umask is 0002.
@@ -189,7 +202,7 @@ copy_ael_rpms_to_eol_repo()
         noarch)
             repos=($rroot/ael/i386)
             ;;
-        i[35]86)
+        i?86)
             repos=($rroot/ael/i386)
             ;;
         *)
@@ -209,14 +222,14 @@ copy_ael_rpms_to_eol_repo()
         echo "createrepo command not found. Run createrepo on a system with the createrepo package"
     fi
     for r in ${allrepos[*]}; do
-        echo createrepo --checksum sha1 $r
+        echo createrepo --checksum sha $r
         # --update is not supported on all versions of createrepo
 
         # Create sha1 checksums, which are compatible with rhel5 and fedora yum.
         # rhel5 systems have version 0.4.9 of createrepo which apparently can only
-        # create sha1 checksums. When passed "--checksum sha1" the old createrepo reports
+        # create sha1 checksums. When passed "--checksum sha" the old createrepo reports
         # "This option is deprecated" (sic), but seems to succeed.
-        createrepo --checksum sha1 $r > /dev/null || { echo "createrepo error"; exit 1; }
+        createrepo --checksum sha $r > /dev/null || { echo "createrepo error"; exit 1; }
 
         # For some reason createrepo is creating files without group write permission
         # even if umask is 0002.
