@@ -81,6 +81,14 @@ copy_rpms_to_eol_repo()
         echo "setting umask to 0002 to allow group write permission"
         umask 0002
     fi
+
+    if ! which createrepo > /dev/null; then
+        echo "createrepo command not found. Run createrepo on a system with the createrepo package"
+    fi
+
+    local crver4=false
+    createrepo --version | grep -E "^0\.4\.[0-9]+$" > /dev/null && crver4=true
+
     # copy of list of rpms to the correct eol repository
     local -a allrepos
     local rroot=`get_eol_repo_root`
@@ -159,9 +167,6 @@ copy_rpms_to_eol_repo()
         allrepos=(`unique_strings ${allrepos[*]} ${repos[*]}`)
     done
 
-    if ! which createrepo > /dev/null; then
-        echo "createrepo command not found. Run createrepo on a system with the createrepo package"
-    fi
     for r in ${allrepos[*]}; do
         echo createrepo --checksum sha --update --checkts $r
         # --update is not supported on all versions of createrepo, but
@@ -176,7 +181,11 @@ copy_rpms_to_eol_repo()
         # If yum on an rhel5 system cannot find createrepo package:
         # sudo rpm -ihv http://mirror.centos.org/centos/5.4/os/x86_64/CentOS/createrepo-0.4.11-3.el5.noarch.rpm
 
-        createrepo --checksum sha --update --checkts $r > /dev/null || { echo "createrepo error"; exit 1; }
+        if $crver4; then
+            createrepo --update --checkts $r > /dev/null || { echo "createrepo error"; exit 1; }
+        else
+            createrepo --checksum sha --update --checkts $r > /dev/null || { echo "createrepo error"; exit 1; }
+        fi
 
         # For some reason createrepo is creating files without group write permission
         # even if umask is 0002.
