@@ -11,7 +11,7 @@ repo=/net/www/docs/software/rpms
 # version 0.9.8 (Fedora 12, etc) to create repodata that is compatible
 # with 0.4.9.
 ver4=false
-createrepo --version | grep -E "0\.4\.[0-9]+" > /dev/null && ver4=true
+createrepo --version | grep -E "^0\.4\.[0-9]+$" > /dev/null && ver4=true
 
 for d in `find $repo -name repodata -type d -print`; do
     cd ${d%/repodata} || exit 1
