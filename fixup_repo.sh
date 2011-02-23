@@ -13,7 +13,7 @@ repo=/net/www/docs/software/rpms
 ver4=false
 createrepo --version | grep -E "^0\.4\.[0-9]+$" > /dev/null && ver4=true
 
-for d in `find $repo -name repodata -type d -print`; do
+for d in `find $repo -name .svn -prune -o -name repodata -type d -print`; do
     cd ${d%/repodata} || exit 1
     echo $PWD
     if $ver4; then
