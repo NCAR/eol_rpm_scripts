@@ -10,7 +10,7 @@ trap "{ rm -f $tmpfile; }" EXIT
 tmpfile2=`mktemp`
 trap "{ rm -f $tmpfile2; }" EXIT
 
-find $repo \! -perm -020 -ls > $tmpfile
+find $repo -name .svn -prune -o \! -perm -020 -ls > $tmpfile
 
 offenders=(`awk '/^[0-9]+/{print $5}' $tmpfile | sort -u`)
 
