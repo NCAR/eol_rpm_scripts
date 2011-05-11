@@ -25,18 +25,17 @@ group write permission, preventing others from updating the repository.
 The rmpbuild and createrepo commands ignore your umask and create files without 
 group write access.
 
-Suggestion: use these commands to allow write permission to members of group eol:
-
-find $repo -user $o \! -group eol -exec chgrp eol {} \;
-find $repo -user $o \! -perm -020 -exec chmod g+w {} \;
-
-Or, under subversion, at http://svn.eol.ucar.edu/svn/eol/repo/scripts, is a script
+Under subversion, at http://svn.eol.ucar.edu/svn/eol/repo/scripts, is a script
 called fixup_repo.sh which will run createrepo on all repositories in $repo
 and then enable group write permission on all files owned by you.
 
-The scripts also include a bash function called copy_rpms_to_eol_repo,
-in repo_funcs.sh, which can also be used to copy RPMs to the repository,
-run createrepo and fix the permissions.
+A working copy of http://svn.eol.ucar.edu/svn/eol/repo/scripts is at
+/net/www/docs/software/rpms/scripts. So you can run the fixup script directly:
+    /net/www/docs/software/rpms/scripts/fixup_repo.sh
+
+The scripts repository also includes a bash function called
+copy_rpms_to_eol_repo, in repo_funcs.sh, which can also be used to copy RPMs
+to the repository, run createrepo and fix the permissions.
 
 EOD
 
