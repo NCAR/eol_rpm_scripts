@@ -168,7 +168,6 @@ copy_rpms_to_eol_repo()
     done
 
     for r in ${allrepos[*]}; do
-        echo createrepo --checksum sha --update --checkts $r
         # --update is not supported on all versions of createrepo, but
         # seems to be valid on 0.4.9, which is in RHEL5.
 
@@ -182,8 +181,10 @@ copy_rpms_to_eol_repo()
         # sudo rpm -ihv http://mirror.centos.org/centos/5.4/os/x86_64/CentOS/createrepo-0.4.11-3.el5.noarch.rpm
 
         if $crver4; then
+            echo createrepo --update --checkts $r
             createrepo --update --checkts $r > /dev/null || { echo "createrepo error"; exit 1; }
         else
+            echo createrepo --checksum sha --update --checkts $r
             createrepo --checksum sha --update --checkts $r > /dev/null || { echo "createrepo error"; exit 1; }
         fi
 
