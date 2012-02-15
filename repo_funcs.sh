@@ -68,6 +68,8 @@ get_host_repo_path()
             dist=epel/$n
         elif fgrep -q CentOS $rrel; then
             dist=epel/$n
+        elif fgrep -q Scientific $rrel; then
+            dist=epel/$n
         elif fgrep -q Fedora $rrel; then
             dist=fedora/$n
         fi
