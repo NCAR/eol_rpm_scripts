@@ -27,3 +27,6 @@ done
 find $repo -user $USER \! -group eol -exec chgrp eol {} \;
 find $repo -user $USER \! -perm -020 -exec chmod g+w {} \;
 
+# bug in some versions of createrepo, leaves garbageid directories around
+# https://bugzilla.redhat.com/show_bug.cgi?id=728584
+find $repo -type d -name garbageid -execdir rm -rf {} +
