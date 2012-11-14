@@ -17,9 +17,9 @@ for d in `find $repo -name .svn -prune -o -name repodata -type d -print`; do
     cd ${d%/repodata} || exit 1
     echo $PWD
     if $ver4; then
-        createrepo --update --checkts .
+        createrepo --update .
     else
-        createrepo --checksum sha --update --checkts .
+        createrepo --checksum sha --update .
     fi
     cd - > /dev/null
 done

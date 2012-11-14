@@ -183,11 +183,11 @@ copy_rpms_to_eol_repo()
         # sudo rpm -ihv http://mirror.centos.org/centos/5.4/os/x86_64/CentOS/createrepo-0.4.11-3.el5.noarch.rpm
 
         if $crver4; then
-            echo createrepo --update --checkts $r
-            createrepo --update --checkts $r > /dev/null || { echo "createrepo error"; exit 1; }
+            echo createrepo --update $r
+            createrepo --update $r > /dev/null || { echo "createrepo error"; exit 1; }
         else
-            echo createrepo --checksum sha --update --checkts $r
-            createrepo --checksum sha --update --checkts $r > /dev/null || { echo "createrepo error"; exit 1; }
+            echo createrepo --checksum sha --update $r
+            createrepo --checksum sha --update $r > /dev/null || { echo "createrepo error"; exit 1; }
         fi
 
         # For some reason createrepo is creating files without group write permission
@@ -239,7 +239,7 @@ copy_ael_rpms_to_eol_repo()
         echo "createrepo command not found. Run createrepo on a system with the createrepo package"
     fi
     for r in ${allrepos[*]}; do
-        echo createrepo --checksum sha --update --checkts $r
+        echo createrepo --checksum sha --update $r
         # --update is not supported on all versions of createrepo, but
         # seems to be valid on 0.4.9, which is in RHEL5.
 
@@ -247,7 +247,7 @@ copy_ael_rpms_to_eol_repo()
         # rhel5 systems have version 0.4.9 of createrepo which apparently can only
         # create sha1 checksums. When passed "--checksum sha" the old createrepo reports
         # "This option is deprecated" (sic), but seems to succeed.
-        createrepo --checksum sha --update --checkts $r > /dev/null || { echo "createrepo error"; exit 1; }
+        createrepo --checksum sha --update $r > /dev/null || { echo "createrepo error"; exit 1; }
 
         # For some reason createrepo is creating files without group write permission
         # even if umask is 0002.
