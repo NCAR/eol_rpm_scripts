@@ -182,6 +182,13 @@ copy_rpms_to_eol_repo()
         # If yum on an rhel5 system cannot find createrepo package:
         # sudo rpm -ihv http://mirror.centos.org/centos/5.4/os/x86_64/CentOS/createrepo-0.4.11-3.el5.noarch.rpm
 
+        # Apr 27, 2012:
+        # removed --checkts option to createrepo.  The find -exec chmod command changes
+        # the ctime of the files it changes, which *might* screw up the checkts option.
+        # --checkts doesn't mention which timestamps it uses. 
+        # We've been getting "Package does not match intended download." errors, even
+        # after "yum clean all", and "createrepo -q --update --checkts".  
+
         if $crver4; then
             echo createrepo --update $r
             createrepo --update $r > /dev/null || { echo "createrepo error"; exit 1; }
