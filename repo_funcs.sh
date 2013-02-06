@@ -114,6 +114,10 @@ copy_rpms_to_eol_repo()
                 # if fc* in the rpm name, then copy to specific repository
                 repos=($rroot/fedora/`echo $dist | cut -c3-`/SRPMS)
                 ;;
+            el*)
+                # if el in the rpm name, then copy to specific repository
+                repos=($rroot/epel/`echo $dist | cut -c3-`/SRPMS)
+                ;;
             *)
                 # get repo path for this machine
                 repos=($rroot/`get_host_repo_path`/SRPMS)
@@ -133,6 +137,10 @@ copy_rpms_to_eol_repo()
                 # if fc* in the rpm name, then copy to specific repository
                 repos=($rroot/fedora/`echo $dist | cut -c3-`/$basearch)
                 ;;
+            el*)
+                # if el* in the rpm name, then copy to specific repository
+                repos=($rroot/epel/`echo $dist | cut -c3-`/$basearch)
+                ;;
             *)
                 # get repo path for this machine
                 repos=($rroot/`get_host_repo_path`/$basearch)
@@ -147,6 +155,10 @@ copy_rpms_to_eol_repo()
             fc*)
                 # if fc* in the rpm name, then copy to specific repository
                 repos=($rroot/fedora/`echo $dist | cut -c3-`/$basearch)
+                ;;
+            el*)
+                # if el* in the rpm name, then copy to specific repository
+                repos=($rroot/epel/`echo $dist | cut -c3-`/$basearch)
                 ;;
             *)
                 # get repo path for this machine
@@ -201,6 +213,23 @@ copy_rpms_to_eol_repo()
         # even if umask is 0002.
         find $r -user $USER \! -perm -020 -exec chmod g+w {} \;
     done
+}
+
+rsync_rpms_to_eol_repo()
+{
+    local host=$1
+    shift
+    local tardir=$(mktemp -d /tmp/XXXXXX)
+    cp repo_scripts/repo_funcs.sh $tardir
+    while [ $# -gt 0 ]; do
+	cp $1 $tardir
+	shift
+    done
+    local tarball=$(mktemp /tmp/XXXXXX.tar.gz)
+    tar czf $tarball -C $tardir .
+    scp $tarball $host:/tmp
+    ssh $host 'td=$(mktemp -d /tmp/XXXXXX); cd $td; tar xzf '$tarball'; source repo_funcs.sh; copy_rpms_to_eol_repo *.rpm; cd /tmp; rm -rf $td;'rm $tarball
+    rm -rf $tardir $tarball
 }
 
 copy_ael_rpms_to_eol_repo()
@@ -261,6 +290,24 @@ copy_ael_rpms_to_eol_repo()
         find $r -user $USER \! -perm -020 -exec chmod g+w {} \;
     done
 }
+
+rsync_ael_rpms_to_eol_repo()
+{
+    local host=$1
+    shift
+    local tardir=$(mktemp -d /tmp/XXXXXX)
+    cp repo_scripts/repo_funcs.sh $tardir
+    while [ $# -gt 0 ]; do
+	cp $1 $tardir
+	shift
+    done
+    local tarball=$(mktemp /tmp/XXXXXX.tar.gz)
+    tar czf $tarball -C $tardir .
+    scp $tarball $host:/tmp
+    ssh $host 'td=$(mktemp -d /tmp/XXXXXX); cd $td; tar xzf '$tarball'; source repo_funcs.sh; copy_ael_rpms_to_eol_repo *.rpm; cd /tmp; rm -rf $td;'rm $tarball
+    rm -rf $tardir $tarball
+}
+
 
 unique_strings()
 {
