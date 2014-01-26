@@ -171,8 +171,28 @@ copy_rpms_to_eol_repo()
             exit 1
             ;;
         esac
+
+        # clean up all but last two releases
+        # the following assumes that the field after the last
+        # dash '-' is the release, e.g.: nidas-libs-1.1-7002.el6.x86_64.rpm
+        # count number of fields separated by dashes in rpmfile 
+        # this would break if a dash is in the arch (x86_64) or dist (el6) fields.
+        local rpmf=$(basename $rpmfile)
+        local nf=$(echo $rpmf | sed 's/^-//g' | wc -c)
+
         for d in ${repos[*]}; do
             [ -d $d ] || mkdir -p $d
+
+            # list all but last two rpms with the same version but different release,
+            # treating release as a numeric field, not alpha
+            cd $d
+            local -a oldrpms=( $(shopt -s nullglob; ls ${rpmf%-*}* | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-2) )
+            if [ ${#oldrpms[*]} -gt 0 ]; then
+                echo "cleaning up: ${oldrpms[*]}"
+                rm -f ${oldrpms[*]}
+            fi
+            cd - > /dev/null
+
             echo rsync $rpmfile $d
             rsync $rpmfile $d
             chmod g+w $d/${rpmfile##*/}
