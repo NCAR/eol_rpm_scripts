@@ -16,10 +16,15 @@ if createrepo --version | grep -Eq "^0\.4\.[0-9]+$" ; then
     createrepo="createrepo --update"
 fi
 
-find $repo -name .svn -prune -o -name repodata -type d -print | \
-while read d ; do
-    d=`dirname "$d"`
-    (set -x; $echo $createrepo "$d")
+for d in `find $repo -name .svn -prune -o -name repodata -type d -print`; do
+    cd ${d%/repodata} || exit 1
+    echo $PWD
+    if $ver4; then
+        createrepo .
+    else
+        createrepo --checksum sha .
+    fi
+    cd - > /dev/null
 done
 
 find $repo -user $USER \! -group eol -print0 | xargs -0r $echo chgrp eol
