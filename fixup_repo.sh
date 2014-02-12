@@ -9,21 +9,29 @@ echo=
 
 # createrepo version 0.4.9 (EL5) complains about --checksum sha,
 # "This option is deprecated", but the option is necessary with
-# version 0.9.8 (Fedora 12, etc) to create repodata that is compatible
-# with 0.4.9.
-createrepo="createrepo --checksum sha --update"
-if createrepo --version | grep -Eq "^0\.4\.[0-9]+$" ; then
-    createrepo="createrepo --update"
-fi
+# newer versions of createrepo to create repositories compatible with
+# yum 3.2.*
+
+crver4=false
+createrepo --version | grep -q -E "^0\.4\.[0-9]+$" > /dev/null && crver4=true
 
 for d in `find $repo -name .svn -prune -o -name repodata -type d -print`; do
     cd ${d%/repodata} || exit 1
     echo $PWD
-    if $ver4; then
-        createrepo .
+
+    if $crver4; then
+        echo "createrepo ."
+        createrepo . || exit 1
     else
-        createrepo --checksum sha .
+        if echo $d | fgrep -q epel/5; then
+            echo "createrepo --checksum sha ."
+            createrepo --checksum sha . || exit 1
+        else
+            echo "createrepo ."
+            createrepo . || exit 1
+        fi
     fi
+
     cd - > /dev/null
 done
 

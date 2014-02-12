@@ -205,7 +205,12 @@ copy_rpms_to_eol_repo()
         # --update is not supported on all versions of createrepo, but
         # seems to be valid on 0.4.9, which is in RHEL5.
 
-        # Create sha1 checksums, which are compatible with rhel5 and fedora yum.
+        # Create sha1 checksums, which are compatible with rhel5.
+        # yum on CentOS 5.10 is version 3.2.22. If the repo does not
+        # have sha1 checksum that version of yum will report
+        # "Error performing checksum" on the primary.sqlite.bz2 file
+        # and not be able to access the repo.
+        # 
         # rhel5 systems have version 0.4.9 of createrepo which apparently can only
         # create sha1 checksums. When passed "--checksum sha" the old createrepo reports
         # "This option is deprecated" (sic), but seems to succeed.
@@ -225,8 +230,13 @@ copy_rpms_to_eol_repo()
             echo createrepo --update $r
             createrepo --update $r > /dev/null || { echo "createrepo error"; exit 1; }
         else
-            echo createrepo --checksum sha --update $r
-            createrepo --checksum sha --update $r > /dev/null || { echo "createrepo error"; exit 1; }
+            if echo $r | fgrep -q epel/5; then
+                echo createrepo --checksum sha --update $r
+                createrepo --checksum sha --update $r > /dev/null || { echo "createrepo error"; exit 1; }
+            else
+                echo createrepo --update $r
+                createrepo --update $r > /dev/null || { echo "createrepo error"; exit 1; }
+            fi
         fi
 
         # For some reason createrepo is creating files without group write permission
