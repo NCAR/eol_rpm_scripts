@@ -178,7 +178,8 @@ copy_rpms_to_eol_repo()
         # count number of fields separated by dashes in rpmfile 
         # this would break if a dash is in the arch (x86_64) or dist (el6) fields.
         local rpmf=$(basename $rpmfile)
-        local nf=$(echo $rpmf | sed 's/^-//g' | wc -c)
+        local nf=$(echo $rpmf | sed 's/[^-]//g' | wc -c)
+        echo "rpmf=$rpmf, nf=$nf"
 
         for d in ${repos[*]}; do
             [ -d $d ] || mkdir -p $d
@@ -186,7 +187,7 @@ copy_rpms_to_eol_repo()
             # list all but last two rpms with the same version but different release,
             # treating release as a numeric field, not alpha
             cd $d
-            local -a oldrpms=( $(shopt -s nullglob; ls ${rpmf%-*}* | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-2) )
+            local -a oldrpms=( $(shopt -s nullglob; echo ${rpmf%-*}* | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-2) )
             if [ ${#oldrpms[*]} -gt 0 ]; then
                 echo "cleaning up: ${oldrpms[*]}"
                 rm -f ${oldrpms[*]}
