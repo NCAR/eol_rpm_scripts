@@ -60,21 +60,22 @@ get_host_repo_path()
     #   fedora/8
     #   epel/5
     # Note it doesn't have an architecture directory, like i386.
+    local releaserpm=$(rpm -q --whatprovides redhat-release)
+    local ver=$(rpm -q --queryformat "%{VERSION}\n" $releaserpm)
     local rrel=/etc/redhat-release
-    local dist="unknown"
+    local repo
     if [ -f $rrel ]; then
-        local n=`sed 's/^.*release *\([0-9]*\).*/\1/' $rrel`
         if fgrep -q Enterprise $rrel; then
-            dist=epel/$n
+            repo=epel/$ver
         elif fgrep -q CentOS $rrel; then
-            dist=epel/$n
+            repo=epel/$ver
         elif fgrep -q Scientific $rrel; then
-            dist=epel/$n
+            repo=epel/$ver
         elif fgrep -q Fedora $rrel; then
-            dist=fedora/$n
+            repo=fedora/$ver
         fi
     fi
-    echo $dist
+    echo $repo
 }
 
 copy_rpms_to_eol_repo()
@@ -99,30 +100,15 @@ copy_rpms_to_eol_repo()
         shift
         local rpm=${rpmfile%.*}           # lop off .rpm
         local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
-        rpm=${rpm%.*}               # lop off arch
-        local rel=${rpm##*-}         # get release
-        local dist=`echo "$rel" | sed 's/^[0-9.]*//'`
+
+        local basearch=$arch
+        local repo=$(get_host_repo_path)
 
         local -a repos=()
-        local basearch=$arch
+
         case $arch in
         src)
-            # find all SRPMS directories in eol repository
-            # repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -name ael -prune \) -o -type d -name SRPMS -print`)
-            case $dist in
-            fc*)
-                # if fc* in the rpm name, then copy to specific repository
-                repos=($rroot/fedora/`echo $dist | cut -c3-`/SRPMS)
-                ;;
-            el*)
-                # if el in the rpm name, then copy to specific repository
-                repos=($rroot/epel/`echo $dist | cut -c3-`/SRPMS)
-                ;;
-            *)
-                # get repo path for this machine
-                repos=($rroot/`get_host_repo_path`/SRPMS)
-                ;;
-            esac
+            repos=($rroot/$repo/SRPMS)
             ;;
         noarch)
             # find all non-source repositories, include the path for this machine
@@ -132,39 +118,10 @@ copy_rpms_to_eol_repo()
             ;;
         i?86)
             basearch=i386
-            case $dist in
-            fc*)
-                # if fc* in the rpm name, then copy to specific repository
-                repos=($rroot/fedora/`echo $dist | cut -c3-`/$basearch)
-                ;;
-            el*)
-                # if el* in the rpm name, then copy to specific repository
-                repos=($rroot/epel/`echo $dist | cut -c3-`/$basearch)
-                ;;
-            *)
-                # get repo path for this machine
-                repos=($rroot/`get_host_repo_path`/$basearch)
-                ;;
-            esac
-            # note: newer bash versions (4.0, Fedora 11) support use of ";&"
-            # in place of ";;" to do a fallthru, but it isn't supported on
-            # RHEL5 bash (3.2.25)
+            repos=($rroot/$repo/$basearch)
             ;;
         x86_64)
-            case $dist in
-            fc*)
-                # if fc* in the rpm name, then copy to specific repository
-                repos=($rroot/fedora/`echo $dist | cut -c3-`/$basearch)
-                ;;
-            el*)
-                # if el* in the rpm name, then copy to specific repository
-                repos=($rroot/epel/`echo $dist | cut -c3-`/$basearch)
-                ;;
-            *)
-                # get repo path for this machine
-                repos=($rroot/`get_host_repo_path`/$basearch)
-                ;;
-            esac
+            repos=($rroot/$repo/$basearch)
             ;;
         *)
             echo "rpm architecture $arch not supported in $0"
