@@ -57,22 +57,23 @@ get_host_repo_path()
 {
     # return a repository directory path matching my distribution,
     # looking like the following:
-    #   fedora/8
-    #   epel/5
+    #   fedora/$releasever
+    #   epel/$releasever
+    # where $releasever is determined using the same method yum uses
+
     # Note it doesn't have an architecture directory, like i386.
+
+    # This is what yum does to determine $releasever
     local releaserpm=$(rpm -q --whatprovides redhat-release)
-    local ver=$(rpm -q --queryformat "%{VERSION}\n" $releaserpm)
+    local releasever=$(rpm -q --queryformat "%{VERSION}\n" $releaserpm)
+
     local rrel=/etc/redhat-release
     local repo
     if [ -f $rrel ]; then
-        if fgrep -q Enterprise $rrel; then
-            repo=epel/$ver
-        elif fgrep -q CentOS $rrel; then
-            repo=epel/$ver
-        elif fgrep -q Scientific $rrel; then
-            repo=epel/$ver
-        elif fgrep -q Fedora $rrel; then
-            repo=fedora/$ver
+        if fgrep -q Fedora $rrel; then
+            repo=fedora/$releasever
+        else
+            repo=epel/$releasever
         fi
     fi
     echo $repo
