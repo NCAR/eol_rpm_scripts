@@ -26,6 +26,9 @@ for d in `find $repo -name .svn -prune -o -name repodata -type d -print`; do
         if echo $d | fgrep -q epel/5; then
             echo "createrepo --checksum sha ."
             createrepo --checksum sha . || exit 1
+        elif echo $d | fgrep -q ael; then
+            echo "createrepo --checksum sha ."
+            createrepo --checksum sha . || exit 1
         else
             echo "createrepo ."
             createrepo . || exit 1
