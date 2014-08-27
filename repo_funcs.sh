@@ -35,6 +35,7 @@ get_rpm_topdir()
     mkdir -p $topdir/{BUILD,RPMS,S{OURCE,PEC,RPM}S} || exit 1
     echo "$topdir"
 }
+
 get_eol_repo_root()
 {
     # Return path of top of EOL repository, above the
@@ -55,14 +56,18 @@ get_eol_repo_root()
 
 get_host_repo_path()
 {
+    # Given a passed parameter of the repository type, either "" or "-signed",
     # return a repository directory path matching my distribution,
     # looking like the following:
-    #   fedora/$releasever
-    #   epel/$releasever
+    #   fedora$repotype/$releasever
+    #   epel$repotype/$releasever
     # where $releasever is determined using the same method yum uses
+    #
+    # repotype should be either an empty string, or "-signed"
 
     # Note it doesn't have an architecture directory, like i386.
 
+    local repotype=$1
     # This is what yum does to determine $releasever
     local releaserpm=$(rpm -q --whatprovides redhat-release)
     local releasever=$(rpm -q --queryformat "%{VERSION}\n" $releaserpm)
@@ -71,9 +76,9 @@ get_host_repo_path()
     local repo
     if [ -f $rrel ]; then
         if fgrep -q Fedora $rrel; then
-            repo=fedora/$releasever
+            repo=fedora$repotype/$releasever
         else
-            repo=epel/$releasever
+            repo=epel$repotype/$releasever
         fi
     fi
     echo $repo
@@ -102,8 +107,13 @@ copy_rpms_to_eol_repo()
         local rpm=${rpmfile%.*}           # lop off .rpm
         local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
 
+        # repo type "" or "-signed"
+        local repotype=""
+        rpm -qp --qf "%{SIGGPG}" $rpmfile | fgrep -qv "(none)" && repotype="-signed"
+        echo "repotype=$repotype"
+
         local basearch=$arch
-        local repo=$(get_host_repo_path)
+        local repo=$(get_host_repo_path $repotype)
 
         local -a repos=()
 
@@ -114,7 +124,11 @@ copy_rpms_to_eol_repo()
         noarch)
             # find all non-source repositories, include the path for this machine
             # Exclude ael, old, repodata and any SRPMS directories
-            repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -wholename "*/ael/*" -o -name "*repodata" -o -name SRPMS -o -wholename "*/old/*" -o -wholename "*/.svn/*" -prune \) -o -type d -print` $rroot/`get_host_repo_path`/`uname -i`)
+            if [ "$repotype" == "-signed" ]; then
+                repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -wholename "*/ael/*" -o -name "*repodata" -o -name SRPMS -o -wholename "*/old/*" -o -wholename "*/.svn/*" \) -prune -o -type d -wholename "*-signed/*" -print` $rroot/$(get_host_repo_path $repotype)/$(uname -i))
+            else
+                repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -wholename "*/ael/*" -o -name "*repodata" -o -name SRPMS -o -wholename "*/old/*" -o -wholename "*/.svn/*" -o -wholename "*-signed/*" \) -prune -o -type d -print` $rroot/$(get_host_repo_path $repotype)/$(uname -i))
+            fi
             repos=(`unique_strings ${repos[*]}`)
             ;;
         i?86)
