@@ -159,7 +159,7 @@ copy_rpms_to_eol_repo()
             # list all but last two rpms with the same version but different release,
             # treating release as a numeric field, not alpha
             cd $d
-            local -a oldrpms=( $(shopt -s nullglob; ls ${rpmf%-*}* | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-2) )
+            local -a oldrpms=( $(ls ${rpmf%-*}* 2>/dev/null | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-2) )
             if [ ${#oldrpms[*]} -gt 0 ]; then
                 echo "cleaning up: ${oldrpms[*]}"
                 rm -f ${oldrpms[*]}

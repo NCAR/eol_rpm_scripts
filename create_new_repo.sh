@@ -8,6 +8,8 @@ if [ $# -lt 1 ]; then
     echo "Examples:
 $0 fedora/15
 $0 epel/6"
+$0 fedora-signed/15
+$0 epel-signed/6"
     exit 1
 fi
 
