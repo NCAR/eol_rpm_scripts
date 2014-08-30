@@ -109,7 +109,9 @@ copy_rpms_to_eol_repo()
 
         # repo type "" or "-signed"
         local repotype=""
-        rpm -qp --qf "%{SIGGPG}" $rpmfile | fgrep -qv "(none)" && repotype="-signed"
+        # SIGGPG is listed as an rpm --querytag in addition to SIGPGP,
+        # but returns (none) for rpms signed with gpg (rpm bug?). SIGPGP works
+        rpm -qp --qf "%{SIGPGP}" $rpmfile | fgrep -qv "(none)" && repotype="-signed"
         echo "repotype=$repotype"
 
         local basearch=$arch
