@@ -141,7 +141,7 @@ copy_rpms_to_eol_repo()
             repos=($rroot/$repo/$basearch)
             ;;
         *)
-            echo "rpm architecture $arch not supported in $0"
+            echo "rpm architecture $arch not supported in ${FUNCNAME[0]}"
             exit 1
             ;;
         esac
