@@ -203,20 +203,20 @@ copy_rpms_to_eol_repo()
 
         if $crver4; then
             echo createrepo --update $r
-            createrepo --update $r > /dev/null || { echo "createrepo error"; exit 1; }
+            flock $r -c "createrepo --update $r" > /dev/null || { echo "createrepo error"; exit 1; }
         else
             if echo $r | fgrep -q epel/5; then
                 echo createrepo --checksum sha --update $r
-                createrepo --checksum sha --update $r > /dev/null || { echo "createrepo error"; exit 1; }
+                flock $r -c "createrepo --checksum sha --update $r" > /dev/null || { echo "createrepo error"; exit 1; }
             else
                 echo createrepo --update $r
-                createrepo --update $r > /dev/null || { echo "createrepo error"; exit 1; }
+                flock $r -c "createrepo --update $r > /dev/null" || { echo "createrepo error"; exit 1; }
             fi
         fi
 
         # For some reason createrepo is creating files without group write permission
         # even if umask is 0002.
-        find $r -user $USER \! -perm -020 -exec chmod g+w {} \;
+        flock $r -c "find $r -user $USER \! -perm -020 -exec chmod g+w {} \;"
     done
 }
 
@@ -288,11 +288,11 @@ copy_ael_rpms_to_eol_repo()
         # rhel5 systems have version 0.4.9 of createrepo which apparently can only
         # create sha1 checksums. When passed "--checksum sha" the old createrepo reports
         # "This option is deprecated" (sic), but seems to succeed.
-        createrepo --checksum sha --update $r > /dev/null || { echo "createrepo error"; exit 1; }
+        flock $r -c "createrepo --checksum sha --update $r" > /dev/null || { echo "createrepo error"; exit 1; }
 
         # For some reason createrepo is creating files without group write permission
         # even if umask is 0002.
-        find $r -user $USER \! -perm -020 -exec chmod g+w {} \;
+        flock $r -c "find $r -user $USER \! -perm -020 -exec chmod g+w {} \;"
     done
 }
 

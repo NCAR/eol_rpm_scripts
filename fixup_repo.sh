@@ -28,17 +28,17 @@ for d in ${repos[*]}; do
 
     if $crver4; then
         echo "createrepo ."
-        createrepo . || exit 1
+        flock . -c "createrepo ." || exit 1
     else
         if echo $d | fgrep -q epel/5; then
             echo "createrepo --checksum sha ."
-            createrepo --checksum sha . || exit 1
+            flock . -c "createrepo --checksum sha ." || exit 1
         elif echo $d | fgrep -q ael; then
             echo "createrepo --checksum sha ."
-            createrepo --checksum sha . || exit 1
+            flock . -c "createrepo --checksum sha ." || exit 1
         else
             echo "createrepo ."
-            createrepo . || exit 1
+            flock . -c "createrepo ." || exit 1
         fi
     fi
 
