@@ -17,7 +17,7 @@ repo=$1
 
 repotop=/net/www/docs/software/rpms
 
-for s in SRPMS i386 x86_64; do
+for s in SRPMS x86_64; do
     echo "creating $repotop/$repo/$s/repodata"
     mkdir -p $repotop/$repo/$s/repodata || exit 1
 done
@@ -32,6 +32,8 @@ fi
 
 # Run createrepo
 dir=`dirname $0`
-$dir/fixup_repo.sh $repo
+for s in SRPMS x86_64; do
+    $dir/fixup_repo.sh $repo/$s
+done
 
 

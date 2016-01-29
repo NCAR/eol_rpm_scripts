@@ -217,6 +217,7 @@ copy_rpms_to_eol_repo()
         # For some reason createrepo is creating files without group write permission
         # even if umask is 0002.
         flock $r -c "find $r -user $USER \! -perm -020 -exec chmod g+w {} \;"
+        flock $r -c "find $r -user $USER \! -group eol -exec chgrp eol {} \;"
     done
 }
 
@@ -293,6 +294,7 @@ copy_ael_rpms_to_eol_repo()
         # For some reason createrepo is creating files without group write permission
         # even if umask is 0002.
         flock $r -c "find $r -user $USER \! -perm -020 -exec chmod g+w {} \;"
+        flock $r -c "find $r -user $USER \! -group eol -exec chgrp eol {} \;"
     done
 }
 
