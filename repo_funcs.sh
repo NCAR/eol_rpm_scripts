@@ -241,7 +241,7 @@ update_eol_repo_unlocked()
 
         # clean up old revisions, keeping two
         for rpm in ${rpms[*]}; do
-            local nf=$(echo $rpm | sed 's/[^-]//g' | wc -c)
+            local nf=$(echo -n $rpm | sed 's/[^-]//g' | wc -c)
             echo "rpmf=$rpm, nf=$nf"
 
             # list all but last two rpms with the same version
