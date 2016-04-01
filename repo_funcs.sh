@@ -114,6 +114,7 @@ move_rpms_to_eol_repo()
     while [ $# -gt 0 ]; do
         local rpmfile=$1
         shift
+        [ -f $rpmfile ] || continue
         local rpm=${rpmfile%.*}     # lop off .rpm
         local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
 
@@ -179,6 +180,7 @@ move_ael_rpms_to_eol_repo()
     while [ $# -gt 0 ]; do
         local rpmfile=$1
         shift
+        [ -f $rpmfile ] || continue
         local rpm=${rpmfile%.*}     # lop off .rpm
         local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
 
@@ -279,7 +281,12 @@ update_eol_repo_unlocked()
 
 update_eol_repo()
 {
-    local rroot=`get_eol_repo_root`
+    local rroot
+    if [ $# -ge 1 ]; then
+        rroot=$1
+    else
+        rroot=`get_eol_repo_root`
+    fi
 
     flock $rroot bash -c "
         n=$((${#BASH_SOURCE[*]}-1));
