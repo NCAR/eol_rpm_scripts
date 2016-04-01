@@ -84,27 +84,37 @@ get_host_repo_path()
     echo $repo
 }
 
-copy_rpms_to_eol_repo()
+unique_strings()
+{
+    # remove duplicate strings from a list by piping to sort -u,
+    local OLDIFS=$IFS
+    IFS=$'\n'
+    res=(`echo "$*" | sort -u`)
+    IFS=$OLDIFS
+    echo ${res[*]}
+}
+
+get_version_from_spec () {
+    if [ $# -eq 1 ]; then
+        awk '/^Version:/{print $2}' $1
+    else
+        echo "get_version_from_spec:no_spec_file_arg"
+    fi
+}
+
+move_rpms_to_eol_repo()
 {
     if [ $((`umask`)) -ne  $((0002)) ]; then
         echo "setting umask to 0002 to allow group write permission"
         umask 0002
     fi
 
-    if ! which createrepo > /dev/null; then
-        echo "createrepo command not found. Run createrepo on a system with the createrepo package"
-    fi
-
-    local crver4=false
-    createrepo --version | grep -E "^0\.4\.[0-9]+$" > /dev/null && crver4=true
-
-    # copy of list of rpms to the correct eol repository
-    local -a allrepos
+    # move list of rpms to the correct eol repository
     local rroot=`get_eol_repo_root`
     while [ $# -gt 0 ]; do
         local rpmfile=$1
         shift
-        local rpm=${rpmfile%.*}           # lop off .rpm
+        local rpm=${rpmfile%.*}     # lop off .rpm
         local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
 
         # repo type "" or "-signed"
@@ -146,111 +156,30 @@ copy_rpms_to_eol_repo()
             ;;
         esac
 
-        # clean up all but last two releases
-        # the following assumes that the field after the last
-        # dash '-' is the release, e.g.: nidas-libs-1.1-7002.el6.x86_64.rpm
-        # count number of fields separated by dashes in rpmfile 
-        # this would break if a dash is in the arch (x86_64) or dist (el6) fields.
-        local rpmf=$(basename $rpmfile)
-        local nf=$(echo $rpmf | sed 's/[^-]//g' | wc -c)
-        echo "rpmf=$rpmf, nf=$nf"
-
         for d in ${repos[*]}; do
             [ -d $d ] || mkdir -p $d
-
-            # list all but last two rpms with the same version but different release,
-            # treating release as a numeric field, not alpha
-            cd $d
-            local -a oldrpms=( $(shopt -u nullglob; ls ${rpmf%-*}*.rpm 2>/dev/null | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-2) )
-            if [ ${#oldrpms[*]} -gt 0 ]; then
-                echo "cleaning up: ${oldrpms[*]}"
-                rm -f ${oldrpms[*]}
-            fi
-            cd - > /dev/null
 
             echo rsync $rpmfile $d
             rsync $rpmfile $d
             chmod g+w $d/${rpmfile##*/}
         done
         rm -f $rpmfile
-        allrepos=(`unique_strings ${allrepos[*]} ${repos[*]}`)
-    done
-
-    for r in ${allrepos[*]}; do
-        # --update is not supported on all versions of createrepo, but
-        # seems to be valid on 0.4.9, which is in RHEL5.
-
-        # Create sha1 checksums, which are compatible with rhel5.
-        # yum on CentOS 5.10 is version 3.2.22. If the repo does not
-        # have sha1 checksum that version of yum will report
-        # "Error performing checksum" on the primary.sqlite.bz2 file
-        # and not be able to access the repo.
-        # 
-        # rhel5 systems have version 0.4.9 of createrepo which apparently can only
-        # create sha1 checksums. When passed "--checksum sha" the old createrepo reports
-        # "This option is deprecated" (sic), but seems to succeed.
-        # Fedora systems (10,11,??) have 0.9.7 of createrepo.
-
-        # If yum on an rhel5 system cannot find createrepo package:
-        # sudo rpm -ihv http://mirror.centos.org/centos/5.4/os/x86_64/CentOS/createrepo-0.4.11-3.el5.noarch.rpm
-
-        # Apr 27, 2012:
-        # removed --checkts option to createrepo.  The find -exec chmod command changes
-        # the ctime of the files it changes, which *might* screw up the checkts option.
-        # --checkts doesn't mention which timestamps it uses. 
-        # We've been getting "Package does not match intended download." errors, even
-        # after "yum clean all", and "createrepo -q --update --checkts".  
-
-        if $crver4; then
-            echo createrepo --update $r
-            flock $r -c "createrepo --update $r" > /dev/null || { echo "createrepo error"; exit 1; }
-        else
-            if echo $r | fgrep -q epel/5; then
-                echo createrepo --checksum sha --update $r
-                flock $r -c "createrepo --checksum sha --update $r" > /dev/null || { echo "createrepo error"; exit 1; }
-            else
-                echo createrepo --update $r
-                flock $r -c "createrepo --update $r > /dev/null" || { echo "createrepo error"; exit 1; }
-            fi
-        fi
-
-        # For some reason createrepo is creating files without group write permission
-        # even if umask is 0002.
-        flock $r -c "find $r -user $USER \! -perm -020 -exec chmod g+w {} \;"
-        flock $r -c "find $r -user $USER \! -group eol -exec chgrp eol {} \;"
     done
 }
 
-rsync_rpms_to_eol_repo()
-{
-    local host=$1
-    shift
-    local tardir=$(mktemp -d /tmp/XXXXXX)
-    cp repo_scripts/repo_funcs.sh $tardir
-    while [ $# -gt 0 ]; do
-	cp $1 $tardir
-	shift
-    done
-    local tarball=$(mktemp /tmp/XXXXXX.tar.gz)
-    tar czf $tarball -C $tardir .
-    scp $tarball $host:/tmp
-    ssh $host 'td=$(mktemp -d /tmp/XXXXXX); cd $td; tar xzf '$tarball'; source repo_funcs.sh; copy_rpms_to_eol_repo *.rpm; cd /tmp; rm -rf $td;'rm $tarball
-    rm -rf $tardir $tarball
-}
-
-copy_ael_rpms_to_eol_repo()
+move_ael_rpms_to_eol_repo()
 {
     if [ $((`umask`)) -ne  $((0002)) ]; then
         echo "setting umask to 0002 to allow group write permission"
         umask 0002
     fi
-    # copy of list of rpms to the correct eol repository
-    local -a allrepos
+
+    # move of list of rpms to the correct eol repository
     local rroot=`get_eol_repo_root`
     while [ $# -gt 0 ]; do
         local rpmfile=$1
         shift
-        local rpm=${rpmfile%.*}           # lop off .rpm
+        local rpm=${rpmfile%.*}     # lop off .rpm
         local arch=${rpm##*.}       # get arch:  i386, x86_64, src, noarch, etc
 
         local -a repos
@@ -275,75 +204,86 @@ copy_ael_rpms_to_eol_repo()
             chmod g+w $d/${rpmfile##*/}
         done
         rm -f $rpmfile
-        allrepos=(`unique_strings ${allrepos[*]} ${repos[*]}`)
     done
+}
+
+update_eol_repo_unlocked()
+{
+    if [ $((`umask`)) -ne  $((0002)) ]; then
+        echo "setting umask to 0002 to allow group write permission"
+        umask 0002
+    fi
+
+    if [ $# -lt 1 ]; then
+        echo "Usage ${0} repo-root-directory"
+        exit 1
+    fi
+
+    rroot=$1
+
     if ! which createrepo > /dev/null; then
         echo "createrepo command not found. Run createrepo on a system with the createrepo package"
     fi
-    for r in ${allrepos[*]}; do
-        echo createrepo --checksum sha --update $r
-        # --update is not supported on all versions of createrepo, but
-        # seems to be valid on 0.4.9, which is in RHEL5.
 
-        # Create sha1 checksums, which are compatible with rhel5 and fedora yum.
-        # rhel5 systems have version 0.4.9 of createrepo which apparently can only
-        # create sha1 checksums. When passed "--checksum sha" the old createrepo reports
-        # "This option is deprecated" (sic), but seems to succeed.
-        flock $r -c "createrepo --checksum sha --update $r" > /dev/null || { echo "createrepo error"; exit 1; }
+    # Look for these files in the repository
+    local radmfile=repomd.xml
+    local -a repoxmls=$(find $rroot -name $radmfile)
 
-        # For some reason createrepo is creating files without group write permission
-        # even if umask is 0002.
-        flock $r -c "find $r -user $USER \! -perm -020 -exec chmod g+w {} \;"
-        flock $r -c "find $r -user $USER \! -group eol -exec chgrp eol {} \;"
+    for rxml in ${repoxmls[*]}; do
+        local rdir=${rxml%/$radmfile}
+        rdir=${rdir%/repodata}
+
+        cd $rdir > /dev/null || exit 1
+
+        # rpms that are newer than $radmfile
+        local -a rpms=($(find . -name "*.rpm" -newer repodata/$radmfile))
+        # echo "rpms=${rpms[*]}, #=${#rpms[*]}"
+
+        # clean up old revisions, keeping two
+        for rpm in ${rpms[*]}; do
+            local nf=$(echo $rpm | sed 's/[^-]//g' | wc -c)
+            echo "rpmf=$rpm, nf=$nf"
+
+            # list all but last two rpms with the same version
+            # but different release, treating release as a numeric
+            # field, not alpha
+            local -a oldrpms=( $(shopt -u nullglob; ls ${rpm%-*}*.rpm 2>/dev/null | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-2) )
+            if [ ${#oldrpms[*]} -gt 0 ]; then
+                echo "cleaning up: ${oldrpms[*]}"
+                rm -f ${oldrpms[*]}
+            fi
+        done
+
+        cd - > /dev/null
+
+        # If there are any new rpms, run createrepo
+        if [ ${#rpms[*]} -gt 0 ]; then
+
+            if echo $rdir | fgrep -q epel/5; then
+                echo createrepo --checksum sha --update $rdir
+                flock $rdir -c "createrepo --checksum sha --update $rdir" > /dev/null || { echo "createrepo error"; exit 1; }
+            else
+                echo createrepo --update $rdir
+                flock $rdir -c "createrepo --update $rdir > /dev/null" || { echo "createrepo error"; exit 1; }
+            fi
+
+            # createrepo creates files without group
+            # write permission, even if umask is 0002.
+            flock $rdir -c "find $rdir -user $USER \! -perm -020 \
+                -exec chmod g+w {} \;"
+            flock $rdir -c "find $rdir -user $USER \! -group eol \
+                -exec chgrp eol {} \;"
+        fi
     done
 }
 
-rsync_ael_rpms_to_eol_repo()
+update_eol_repo()
 {
-    local host=$1
-    shift
-    local tardir=$(mktemp -d /tmp/XXXXXX)
-    cp repo_scripts/repo_funcs.sh $tardir
-    while [ $# -gt 0 ]; do
-	cp $1 $tardir
-	shift
-    done
-    local tarball=$(mktemp /tmp/XXXXXX.tar.gz)
-    tar czf $tarball -C $tardir .
-    scp $tarball $host:/tmp
-    ssh $host 'td=$(mktemp -d /tmp/XXXXXX); cd $td; tar xzf '$tarball'; source repo_funcs.sh; copy_ael_rpms_to_eol_repo *.rpm; cd /tmp; rm -rf $td;'rm $tarball
-    rm -rf $tardir $tarball
+    local rroot=`get_eol_repo_root`
+
+    flock $rroot bash -c "
+        n=$((${#BASH_SOURCE[*]}-1));
+        source ${BASH_SOURCE[$n]};
+        update_eol_repo_unlocked $rroot"
 }
 
-
-unique_strings()
-{
-    # remove duplicate strings from a list by piping to sort -u,
-    local OLDIFS=$IFS
-    IFS=$'\n'
-    res=(`echo "$*" | sort -u`)
-    IFS=$OLDIFS
-    echo ${res[*]}
-}
-
-get_version_from_spec () {
-    if [ $# -eq 1 ]; then
-        awk '/^Version:/{print $2}' $1
-    else
-        echo "get_version_from_spec:no_spec_file_arg"
-    fi
-}
-
-foldertab()
-{
-    fill="________________________________________________________________________________"
-    maxlen=${#fill}
-    cmd_args=$@
-    len=${#cmd_args}
-
-    echo ${fill:0:${len}+1}
-    echo -n $cmd_args
-    echo -n " \\"
-    echo ${fill:0:${maxlen}-${len}-2}
-    echo
-}
