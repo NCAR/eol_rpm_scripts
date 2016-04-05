@@ -3,6 +3,9 @@
 # check permissions on our local yum repositories and
 # email people whose files don't have group write permission
 
+touser=
+[ $# -gt 0 ] && touser=$1
+
 repo=/net/www/docs/software/rpms
 
 tmpfile=`mktemp`
@@ -55,6 +58,8 @@ EOD
     esac
 
     env MAILRC=/dev/null smtp=smtp.eol.ucar.edu from=$USER@ucar.edu mailx -s "File(s) on $repo without group write" $to  < $tmpfile2
-    env MAILRC=/dev/null smtp=smtp.eol.ucar.edu from=$USER@ucar.edu mailx -s "File(s) on $repo without group write" $USER  < $tmpfile2
+
+    [ $touser ] && \
+        env MAILRC=/dev/null smtp=smtp.eol.ucar.edu from=$USER@ucar.edu mailx -s "File(s) on $repo without group write" $touser  < $tmpfile2
 done
 
