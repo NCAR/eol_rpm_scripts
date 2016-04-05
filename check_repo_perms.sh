@@ -26,8 +26,8 @@ The rmpbuild and createrepo commands ignore your umask and create files without
 group write access.
 
 Under subversion, at http://svn.eol.ucar.edu/svn/eol/repo/scripts, is a script
-called fixup_repo.sh which will run createrepo on all repositories in $repo
-and then enable group write permission on all files owned by you.
+called fixup_repo.sh which enable group write permission on all files that are
+owned by you.
 
 A working copy of http://svn.eol.ucar.edu/svn/eol/repo/scripts is at
 /net/www/docs/software/rpms/scripts. You can run the fixup script directly,
@@ -35,8 +35,14 @@ from the $o login:
     /net/www/docs/software/rpms/scripts/fixup_repo.sh
 
 The scripts repository also includes a bash function called
-copy_rpms_to_eol_repo, in repo_funcs.sh, which can also be used to copy RPMs
-to the repository, run createrepo and fix the permissions.
+move_rpms_to_eol_repo, in repo_funcs.sh, which can also be used to copy RPMs
+to the repository, with the right permissions.
+
+Corruption of the repository can occur if multiple instances of createrepo are
+run at the same time. If you need to run createrepo, please run it on
+jenkins.eol.ucar.edu via the update_eol_repo function:
+    source /net/www/docs/software/rpms/scripts/repo_funcs.sh
+    update_eol_repo
 
 EOD
 
