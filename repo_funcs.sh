@@ -18,7 +18,7 @@ get_rpm_topdir()
     [ -f $rmacs ] && grep -q "^[[:space:]]*%_topdir[[:space:]]" $rmacs && needs_topdir=false
 
     if $needs_topdir; then
-        mkdir -p ~/rpmbuild/{BUILD,RPMS,S{OURCE,PEC,RPM}S} || exit 1
+        mkdir -p ~/rpmbuild/{BUILD,RPMS,S{OURCE,PEC,RPM}S} || return 1
         echo "%_topdir	%(echo \$HOME)/rpmbuild
 # turn off building the debuginfo package
 %debug_package	%{nil}\
@@ -32,7 +32,7 @@ get_rpm_topdir()
         echo "%_topdir not defined in $rmacs or /usr/lib/rpm"
         topdir="unknown_topdir"
     fi
-    mkdir -p $topdir/{BUILD,RPMS,S{OURCE,PEC,RPM}S} || exit 1
+    mkdir -p $topdir/{BUILD,RPMS,S{OURCE,PEC,RPM}S} || return 1
     echo "$topdir"
 }
 
@@ -104,10 +104,7 @@ get_version_from_spec () {
 
 move_rpms_to_eol_repo()
 {
-    if [ $((`umask`)) -ne  $((0002)) ]; then
-        echo "setting umask to 0002 to allow group write permission"
-        umask 0002
-    fi
+    [ $((`umask`)) -ne  $((0002)) ] && umask 0002
 
     # move list of rpms to the correct eol repository
     local rroot=`get_eol_repo_root`
@@ -153,7 +150,7 @@ move_rpms_to_eol_repo()
             ;;
         *)
             echo "rpm architecture $arch not supported in ${FUNCNAME[0]}"
-            exit 1
+            return 1
             ;;
         esac
 
@@ -170,10 +167,7 @@ move_rpms_to_eol_repo()
 
 move_ael_rpms_to_eol_repo()
 {
-    if [ $((`umask`)) -ne  $((0002)) ]; then
-        echo "setting umask to 0002 to allow group write permission"
-        umask 0002
-    fi
+    [ $((`umask`)) -ne  $((0002)) ] && umask 0002
 
     # move of list of rpms to the correct eol repository
     local rroot=`get_eol_repo_root`
@@ -211,20 +205,17 @@ move_ael_rpms_to_eol_repo()
 
 update_eol_repo_unlocked()
 {
-    if [ $((`umask`)) -ne  $((0002)) ]; then
-        echo "setting umask to 0002 to allow group write permission"
-        umask 0002
-    fi
+    [ $((`umask`)) -ne  $((0002)) ] && umask 0002
 
     if [ $# -lt 1 ]; then
         echo "Usage ${0} repo-root-directory"
-        exit 1
+        return 1
     fi
 
     rroot=$1
 
     if ! which createrepo > /dev/null; then
-        echo "createrepo command not found. Run createrepo on a system with the createrepo package"
+        echo "createrepo command not found."
     fi
 
     # Look for these files in the repository
@@ -235,7 +226,7 @@ update_eol_repo_unlocked()
         local rdir=${rxml%/$radmfile}
         rdir=${rdir%/repodata}
 
-        cd $rdir > /dev/null || exit 1
+        cd $rdir > /dev/null || return 1
 
         # rpms that are newer than $radmfile
         local -a rpms=($(find . -name "*.rpm" -newer repodata/$radmfile))
@@ -263,10 +254,10 @@ update_eol_repo_unlocked()
 
             if echo $rdir | fgrep -q epel/5; then
                 echo createrepo --checksum sha --update $rdir
-                flock $rdir -c "createrepo --checksum sha --update $rdir" > /dev/null || { echo "createrepo error"; exit 1; }
+                flock $rdir -c "createrepo --checksum sha --update $rdir" > /dev/null || { echo "createrepo error"; return 1; }
             else
                 echo createrepo --update $rdir
-                flock $rdir -c "createrepo --update $rdir > /dev/null" || { echo "createrepo error"; exit 1; }
+                flock $rdir -c "createrepo --update $rdir > /dev/null" || { echo "createrepo error"; return 1; }
             fi
 
             # createrepo creates files without group
@@ -277,6 +268,7 @@ update_eol_repo_unlocked()
                 -exec chgrp eol {} \;"
         fi
     done
+    return 0
 }
 
 update_eol_repo()

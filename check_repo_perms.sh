@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # check permissions on our local yum repositories and
 # email people whose files don't have group write permission
