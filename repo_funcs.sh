@@ -159,7 +159,7 @@ move_rpms_to_eol_repo()
 
             echo rsync $rpmfile $d
             rsync $rpmfile $d
-            chmod g+w $d/${rpmfile##*/}
+            chmod ug+w,ugo+r $d/${rpmfile##*/}
         done
         rm -f $rpmfile
     done
@@ -197,7 +197,7 @@ move_ael_rpms_to_eol_repo()
             [ -d $d ] || mkdir -p $d
             echo rsync $rpmfile $d
             rsync $rpmfile $d
-            chmod g+w $d/${rpmfile##*/}
+            chmod ug+w,ugo+r $d/${rpmfile##*/}
         done
         rm -f $rpmfile
     done
@@ -262,8 +262,8 @@ update_eol_repo_unlocked()
 
             # createrepo creates files without group
             # write permission, even if umask is 0002.
-            flock $rdir -c "find $rdir -user $USER \! -perm -020 \
-                -exec chmod g+w {} \;"
+            flock $rdir -c "find $rdir -user $USER \! -perm -664 \
+                -exec chmod ug+w,ugo+r {} \;"
             flock $rdir -c "find $rdir -user $USER \! -group eol \
                 -exec chgrp eol {} \;"
         fi
