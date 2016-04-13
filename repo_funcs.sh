@@ -218,6 +218,14 @@ update_eol_repo_unlocked()
         echo "createrepo command not found."
     fi
 
+    # Not sure what circumstance results in .olddata directories
+    # laying around. createrepo fails if it finds them.
+    local -a oldies=($(find $root -name .olddata))
+    if [ ${#oldies[*]} -gt 0 ]; then
+        echo "Warning: found ${#oldies[*]} .olddata directories. Deleting..."
+        rm -rf ${oldies[*]}
+    fi
+
     # Look for these files in the repository
     local radmfile=repomd.xml
     local -a repoxmls=$(find $rroot -name $radmfile)
