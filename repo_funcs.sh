@@ -240,7 +240,8 @@ update_eol_repo_unlocked()
         local -a rpms=($(find . -name "*.rpm" -newer repodata/$radmfile))
         # echo "rpms=${rpms[*]}, #=${#rpms[*]}"
 
-        # clean up old revisions, keeping two
+        # clean up old revisions, keeping some
+        keep=5
         for rpm in ${rpms[*]}; do
             local nf=$(echo $rpm | sed 's/[^-]//g' | wc -c)
             echo "rpmf=$rpm, nf=$nf"
@@ -248,7 +249,7 @@ update_eol_repo_unlocked()
             # list all but last two rpms with the same version
             # but different release, treating release as a numeric
             # field, not alpha
-            local -a oldrpms=( $(shopt -u nullglob; ls ${rpm%-*}*.rpm 2>/dev/null | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-2) )
+            local -a oldrpms=( $(shopt -u nullglob; ls ${rpm%-*}*.rpm 2>/dev/null | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-$keep) )
             if [ ${#oldrpms[*]} -gt 0 ]; then
                 echo "cleaning up: ${oldrpms[*]}"
                 rm -f ${oldrpms[*]}
