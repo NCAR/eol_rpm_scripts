@@ -263,18 +263,16 @@ update_eol_repo_unlocked()
 
             if echo $rdir | fgrep -q epel/5; then
                 echo createrepo --checksum sha --update $rdir
-                flock $rdir -c "createrepo --checksum sha --update $rdir" > /dev/null || { echo "createrepo error"; return 1; }
+                createrepo --checksum sha --update $rdir > /dev/null || { echo "createrepo error"; return 1; }
             else
                 echo createrepo --update $rdir
-                flock $rdir -c "createrepo --update $rdir > /dev/null" || { echo "createrepo error"; return 1; }
+                createrepo --update $rdir > /dev/null || { echo "createrepo error"; return 1; }
             fi
 
             # createrepo creates files without group
             # write permission, even if umask is 0002.
-            flock $rdir -c "find $rdir -user $USER \! -perm -664 \
-                -exec chmod ug+w,ugo+r {} \;"
-            flock $rdir -c "find $rdir -user $USER \! -group eol \
-                -exec chgrp eol {} \;"
+            find $rdir -user $USER \! -perm -664 -exec chmod ug+w,ugo+r {} \;
+            find $rdir -user $USER \! -group eol -exec chgrp eol {} \;
         fi
     done
     return 0
