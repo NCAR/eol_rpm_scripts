@@ -244,9 +244,9 @@ update_eol_repo_unlocked()
         keep=5
         for rpm in ${rpms[*]}; do
             local nf=$(echo $rpm | sed 's/[^-]//g' | wc -c)
-            echo "rpmf=$rpm, nf=$nf"
+            # echo "rpmf=$rpm, nf=$nf"
 
-            # list all but last two rpms with the same version
+            # list all but last $keep rpms with the same version
             # but different release, treating release as a numeric
             # field, not alpha
             local -a oldrpms=( $(shopt -u nullglob; ls ${rpm%-*}*.rpm 2>/dev/null | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-$keep) )
