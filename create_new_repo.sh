@@ -33,7 +33,11 @@ fi
 # Run createrepo
 dir=`dirname $0`
 for s in SRPMS x86_64; do
-    $dir/fixup_repo.sh $repo/$s
+    cd $repo/$s
+    createrepo .
+    cd -
 done
+
+$dir/fixup_repo.sh
 
 
