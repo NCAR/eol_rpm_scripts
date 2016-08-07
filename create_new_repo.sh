@@ -25,7 +25,7 @@ for s in SRPMS x86_64; do
 done
 
 # create symbolic links for epel
-if [[ $repo =~ ^epel/[0-9]+$ ]]; then
+if [[ $repo =~ ^epel.*/[0-9]+$ ]]; then
     eversion=${1##*/}
     ln -s $eversion $repotop/${1}Client
     ln -s $eversion $repotop/${1}Server
