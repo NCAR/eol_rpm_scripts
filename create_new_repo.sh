@@ -17,6 +17,8 @@ repo=$1
 
 repotop=/net/www/docs/software/rpms
 
+[ -d $repotop/$repo ] || mkdir -p $repotop/$repo
+
 for s in SRPMS x86_64; do
     echo "running: createrepo $repotop/$repo/$s"
     createrepo $repotop/$repo/$s || exit 1
