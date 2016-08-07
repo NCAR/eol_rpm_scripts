@@ -18,8 +18,8 @@ repo=$1
 repotop=/net/www/docs/software/rpms
 
 for s in SRPMS x86_64; do
-    echo "creating $repotop/$repo/$s/repodata"
-    mkdir -p $repotop/$repo/$s/repodata || exit 1
+    echo "running: createrepo $repotop/$repo/$s"
+    createrepo $repotop/$repo/$s || exit 1
 done
 
 # create symbolic links for epel
@@ -29,14 +29,6 @@ if [[ $repo =~ ^epel/[0-9]+$ ]]; then
     ln -s $eversion $repotop/${1}Server
     ln -s $eversion $repotop/${1}Workstation
 fi
-
-# Run createrepo
-dir=`dirname $0`
-for s in SRPMS x86_64; do
-    cd $repo/$s
-    createrepo .
-    cd -
-done
 
 $dir/fixup_repo.sh
 
