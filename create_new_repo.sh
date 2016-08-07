@@ -15,11 +15,13 @@ fi
 
 repo=$1
 
+dir=$(readlink  -f $0) 
+dir=$(dirname $dir)
+
 repotop=/net/www/docs/software/rpms
 
-[ -d $repotop/$repo ] || mkdir -p $repotop/$repo
-
 for s in SRPMS x86_64; do
+    [ -d $repotop/$repo/$s ] || mkdir -p $repotop/$repo/$s
     echo "running: createrepo $repotop/$repo/$s"
     createrepo $repotop/$repo/$s || exit 1
 done
