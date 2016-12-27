@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# group owner of repository files
+repogrp=eol
+
 get_rpm_topdir()
 {
 
@@ -272,7 +275,7 @@ update_eol_repo_unlocked()
             # createrepo creates files without group
             # write permission, even if umask is 0002.
             find $rdir -user $USER \! -perm -664 -exec chmod ug+w,ugo+r {} \;
-            find $rdir -user $USER \! -group eol -exec chgrp eol {} \;
+            find $rdir -user $USER \! -group $repogrp -exec chgrp $repogrp {} \;
         fi
     done
     return 0
