@@ -8,10 +8,9 @@ touser=
 
 repo=/net/www/docs/software/rpms
 
-tmpfile=`mktemp`
-trap "{ rm -f $tmpfile; }" EXIT
-tmpfile2=`mktemp`
-trap "{ rm -f $tmpfile2; }" EXIT
+tmpfile=$(mktemp)
+tmpfile2=$(mktemp)
+trap "{ rm -f $tmpfile $tmpfile2; }" EXIT
 
 find $repo -name .svn -prune -o \! -perm -020 -ls > $tmpfile
 
