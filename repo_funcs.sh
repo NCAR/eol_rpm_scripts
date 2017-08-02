@@ -236,7 +236,7 @@ update_eol_repo_unlocked()
         local -a oldies=($(find . -name .olddata))
         if [ ${#oldies[*]} -gt 0 ]; then
             echo "Warning: found ${#oldies[*]} .olddata directories. Deleting..."
-            rm -rf ${oldies[*]}
+            rm -rf ${oldies[*]} || return 1
         fi
 
         # rpms that are newer than $radmfile
@@ -255,7 +255,7 @@ update_eol_repo_unlocked()
             local -a oldrpms=( $(shopt -u nullglob; ls ${rpm%-*}*.rpm 2>/dev/null | sort -t- -k1,$((nf-1)) -k${nf}n | head -n-$keep) )
             if [ ${#oldrpms[*]} -gt 0 ]; then
                 echo "cleaning up: ${oldrpms[*]}"
-                rm -f ${oldrpms[*]}
+                rm -f ${oldrpms[*]} || return 1
             fi
         done
 
@@ -274,8 +274,8 @@ update_eol_repo_unlocked()
 
             # createrepo creates files without group
             # write permission, even if umask is 0002.
-            find $rdir -user $USER \! -perm -664 -exec chmod ug+w,ugo+r {} \;
-            find $rdir -user $USER \! -group $repogrp -exec chgrp $repogrp {} \;
+            find $rdir -user $USER \! -perm -664 -exec chmod ug+w,ugo+r {} \; || return 1
+            find $rdir -user $USER \! -group $repogrp -exec chgrp $repogrp {} \; || return 1
         fi
     done
     return 0
