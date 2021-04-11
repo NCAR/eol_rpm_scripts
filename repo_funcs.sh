@@ -135,14 +135,8 @@ move_rpms_to_eol_repo()
             repos=($rroot/$repo/SRPMS)
             ;;
         noarch)
-            # find all non-source repositories, include the path for this machine
-            # Exclude ael, old, repodata and any SRPMS directories
-            if [ "$repotype" == "-signed" ]; then
-                repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -wholename "*/ael/*" -o -name "*repodata" -o -name SRPMS -o -wholename "*/old/*" -o -wholename "*/.svn/*" \) -prune -o -type d -wholename "*-signed/*" -print` $rroot/$(get_host_repo_path $repotype)/$(uname -i))
-            else
-                repos=(`find $rroot -maxdepth 3 -mindepth 3 \( -wholename "*/ael/*" -o -name "*repodata" -o -name SRPMS -o -wholename "*/old/*" -o -wholename "*/.svn/*" -o -wholename "*-signed/*" \) -prune -o -type d -print` $rroot/$(get_host_repo_path $repotype)/$(uname -i))
-            fi
-            repos=(`unique_strings ${repos[*]}`)
+            basearch=$(uname -i)
+            repos=($rroot/$repo/$basearch)
             ;;
         i?86)
             basearch=i386
