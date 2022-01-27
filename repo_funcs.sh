@@ -64,16 +64,15 @@ get_host_repo_path()
     # looking like the following:
     #   fedora$repotype/$releasever
     #   epel$repotype/$releasever
-    # where $releasever is determined using the same method yum uses
+    # where $releasever is extracted from rpm %dist
     #
     # repotype should be either an empty string, or "-signed"
 
     # Note it doesn't have an architecture directory, like i386.
 
     local repotype=$1
-    # This is what yum does to determine $releasever
-    local releaserpm=$(rpm -q --whatprovides redhat-release)
-    local releasever=$(rpm -q --queryformat "%{VERSION}\n" $releaserpm)
+    # Extract release number from %{dist} macro
+    local releasever=$(rpm -E %{dist} | sed -e 's/[^0-9]//g')
 
     local rrel=/etc/redhat-release
     local repo
@@ -122,7 +121,7 @@ move_rpms_to_eol_repo()
         local repotype=""
         # SIGGPG is listed as an rpm --querytag in addition to SIGPGP,
         # but returns (none) for rpms signed with gpg (rpm bug?). SIGPGP works
-        rpm -qp --qf "%{SIGPGP}" $rpmfile | fgrep -qv "(none)" && repotype="-signed"
+        rpm -qpi $rpmfile | grep 'Signature' | fgrep -qv "(none)" && repotype="-signed"
         echo "repotype=$repotype"
 
         local basearch=$arch
